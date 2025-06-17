@@ -1050,6 +1050,14 @@
 
             showResultView({ ...data, filename: uploadedFileName });
             showToast('File uploaded successfully!', 'success');
+
+            const endTime = Date.now();
+            const duration = ((endTime - state.uploadStartTime) / 1000).toFixed(2);
+            const timeInfo = document.createElement('div');
+            timeInfo.style.textAlign = 'center';
+            timeInfo.style.margin = '12px 0 0 0';
+            timeInfo.innerHTML = `<span style="color:#3fb950;">Time used: <strong>${duration} s</strong></span>`;
+            elements.resultContainer.appendChild(timeInfo);
         }
 
         function handleUploadError(error) {
