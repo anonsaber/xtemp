@@ -298,7 +298,15 @@ func commonUploadLogic(c *gin.Context, filename string, bodyReader io.Reader, is
     userAgent := c.GetHeader("User-Agent")
     if strings.Contains(userAgent, "curl") || strings.Contains(userAgent, "Wget") {
         c.Header("Content-Type", "text/plain; charset=utf-8")
-        c.String(http.StatusCreated, "=========================\n\nUploaded Success, size %d\n\nGet File:\n\nwget %s\n\nDelete File:\n\ncurl -X DELETE %s\n\n=========================\n", bytesWritten, accessURL, accessURL)
+        c.String(http.StatusCreated,
+            "\n=========================\n\n"+
+                "Uploaded Success, size %d\n\n"+
+                "Get File:\n\n"+
+                "wget %s\n\n"+
+                "Delete File:\n\n"+
+                "curl -X DELETE %s\n\n"+
+                "=========================\n\n",
+            bytesWritten, accessURL, accessURL)
         return
     }
 
