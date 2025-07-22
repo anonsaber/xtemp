@@ -294,13 +294,22 @@ func commonUploadLogic(c *gin.Context, filename string, bodyReader io.Reader, is
     urlEncodedFilename := url.PathEscape(sanitizedFilename)
     accessURL := fmt.Sprintf("%s/%s/%s", getBaseURL(c.Request), randomID, urlEncodedFilename)
     deleteCommand := fmt.Sprintf("curl -X DELETE '%s'", accessURL)
-    if config.StorageType == StorageR2 {
-        rel, _ := filepath.Rel(config.BaseStoragePath, fullStoragePath)
-        key := filepath.ToSlash(rel)
-        logger.Printf("File uploaded to R2: key=%s (size %d bytes). Access URL: %s. Delete Command: %s", key, bytesWritten, accessURL, deleteCommand)
-    } else {
-        logger.Printf("File %s (size %d bytes) uploaded successfully. Access URL: %s. Delete Command: %s", fullStoragePath, bytesWritten, accessURL, deleteCommand)
+
+    userAgent := c.GetHeader("User-Agent")
+    if strings.Contains(userAgent, "curl") || strings.Contains(userAgent, "Wget") {
+        c.Header("Content-Type", "text/plain; charset=utf-8")
+        c.String(http.StatusCreated,
+            "\n=========================\n\n"+
+                "Uploaded Success, size %d\n\n"+
+                "Get File:\n\n"+
+                "wget %s\n\n"+
+                "Delete File:\n\n"+
+                "curl -X DELETE %s\n\n"+
+                "=========================\n\n",
+            bytesWritten, accessURL, accessURL)
+        return
     }
+
     c.JSON(http.StatusCreated, gin.H{
         "message":        "File uploaded successfully",
         "id":             randomID,

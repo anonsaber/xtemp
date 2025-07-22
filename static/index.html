@@ -967,7 +967,7 @@
             
             state.uploadController = new AbortController();
             state.uploadStartTime = Date.now();
-            state.lastLoaded = 0;
+            state.uploadEndTime = null;
             
             const xhr = new XMLHttpRequest();
             xhr.open('POST', UPLOAD_ENDPOINT, true);
@@ -982,6 +982,10 @@
                     if (elapsedTimeInSeconds > 0.1) {
                         const speed = e.loaded / elapsedTimeInSeconds / 1024;
                         elements.speedInfo.textContent = `${speed.toFixed(1)} KB/s`;
+                    }
+                    
+                    if (e.loaded === e.total && !state.uploadEndTime) {
+                        state.uploadEndTime = Date.now();
                     }
                 } else {
                      elements.progressText.textContent = '...';
@@ -1050,6 +1054,22 @@
 
             showResultView({ ...data, filename: uploadedFileName });
             showToast('File uploaded successfully!', 'success');
+
+            let duration;
+            if (state.uploadEndTime) {
+                duration = ((state.uploadEndTime - state.uploadStartTime) / 1000).toFixed(2);
+            } else {
+                const endTime = Date.now();
+                duration = ((endTime - state.uploadStartTime) / 1000).toFixed(2);
+            }
+            const oldTimeInfo = elements.resultContainer.querySelector('.upload-time-info');
+            if (oldTimeInfo) oldTimeInfo.remove();
+            const timeInfo = document.createElement('div');
+            timeInfo.className = 'upload-time-info';
+            timeInfo.style.textAlign = 'center';
+            timeInfo.style.margin = '12px 0 0 0';
+            timeInfo.innerHTML = `<span style="color:#3fb950;">Time used: <strong>${duration} s</strong></span>`;
+            elements.resultContainer.appendChild(timeInfo);
         }
 
         function handleUploadError(error) {
