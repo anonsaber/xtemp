@@ -12,6 +12,7 @@ It is also similar to **transfer.sh**, with a focus on simple self-hosted tempor
 - All file types supported (max size configurable)
 - Configurable retention and cleanup interval via seconds-based backend config
 - Built-in cleanup worker for both local storage and Cloudflare R2
+- Crash-safe cleanup model: expiration is determined by filesystem/object timestamps, not in-memory queues
 
 ## Usage
 
@@ -94,17 +95,38 @@ You can change the maximum allowed upload size without restarting the service by
    - The API is only available if `XTEMP_CONFIG_API_PASSWORD` is set.
    - Always use a strong password for this environment variable.
 
-### File Retention Window
+Minimal environment example:
 
-- Configure file retention with `XTEMP_RETENTION_SECONDS` (default: `86400`, i.e. 24 hours).
-- Configure cleanup schedule with `XTEMP_CLEANUP_INTERVAL_SECONDS` (default: `3600`, i.e. 1 hour).
-- Frontend terms now read this retention policy from backend instead of a hardcoded value.
+```sh
+-e MAX_UPLOAD_SIZE=524288000 \
+-e XTEMP_CONFIG_API_PASSWORD=your-strong-password
+```
 
-## File Expiration
+### File Retention and Expiration
 
-- **Local storage (`STORAGE_TYPE=local`)**: the server cleanup task removes expired files automatically.
-- **R2 storage (`STORAGE_TYPE=r2`)**: the same server cleanup task lists and deletes expired objects via R2 `DeleteObject`.
-- Delete API remains available for manual cleanup of specific files.
+- `XTEMP_RETENTION_SECONDS`: file retention window in seconds (default: `86400`, i.e. 24 hours).
+- `XTEMP_CLEANUP_INTERVAL_SECONDS`: cleanup task interval in seconds (default: `3600`, i.e. 1 hour).
+- `STORAGE_TYPE=local`: expired files are removed automatically by the server cleanup task.
+- `STORAGE_TYPE=r2`: expired objects are listed and deleted by the same server cleanup task via R2 `DeleteObject`.
+- The DELETE API remains available for manual cleanup of specific files.
+- Frontend terms read retention policy from backend instead of a hardcoded value.
+
+Minimal environment example:
+
+```sh
+-e XTEMP_RETENTION_SECONDS=86400 \
+-e XTEMP_CLEANUP_INTERVAL_SECONDS=3600
+```
+
+## Troubleshooting
+
+- Files are not cleaned up:
+  - Check `XTEMP_RETENTION_SECONDS` and `XTEMP_CLEANUP_INTERVAL_SECONDS`.
+  - Confirm container time is correct (`date` inside container/host).
+  - Check service logs for cleanup entries and deletion errors.
+- R2 objects are not deleted:
+  - Confirm `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` are correct.
+  - Confirm the key has permission to list and delete objects.
 
 The demo site at [xtemp.motofans.club](https://xtemp.motofans.club) is an example deployment.
 
