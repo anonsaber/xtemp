@@ -57,7 +57,7 @@ docker run -d -p 5000:5000 \
   -e XTEMP_STORAGE_PATH=/tmp \
   -e XTEMP_CONFIG_API_PASSWORD=your-strong-password \
   --name xtemp-app \
-  evanshawn/xtemp:1.1
+  evanshawn/xtemp:3.1
 ```
 
 ### 2. Cloudflare R2 Storage (recommended for production)
@@ -72,7 +72,7 @@ docker run -d -p 5000:5000 \
   -e R2_BUCKET_NAME=your_backet_name \
   -e XTEMP_CONFIG_API_PASSWORD=your-strong-password \
   --name xtemp-app \
-  evanshawn/xtemp:1.1
+  evanshawn/xtemp:3.1
 ```
 
 > ⚠️ Please replace `your_account_id`, `your_access_key_id`, `your_secret_access_key`, `your_backet_name`, and `your-strong-password` with your actual Cloudflare R2 information and a strong password.
