@@ -63,6 +63,7 @@ func main() {
 	})
 	r.GET("/config/max_upload_size", handleGetMaxUploadSize)
 	r.GET("/config/server_year", handleGetServerYear)
+	r.GET("/config/retention_policy", handleGetRetentionPolicy)
 	r.GET("/config/set_max_upload_size", handleSetMaxUploadSize)
 	r.GET("/favicon.ico", func(c *gin.Context) {
 		logger.Printf("GET /favicon.ico: Returning 204 No Content.")

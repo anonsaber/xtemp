@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -19,6 +20,8 @@ const (
 	envBaseStoragePath   = "XTEMP_STORAGE_PATH"
 	envTrustedProxies    = "TRUSTED_PROXIES"
 	envMaxUploadSize     = "MAX_UPLOAD_SIZE"
+	envRetentionSeconds  = "XTEMP_RETENTION_SECONDS"
+	envCleanupInterval   = "XTEMP_CLEANUP_INTERVAL_SECONDS"
 	envStorageType       = "STORAGE_TYPE"
 	envR2AccountID       = "R2_ACCOUNT_ID"
 	envR2AccessKeyID     = "R2_ACCESS_KEY_ID"
@@ -28,6 +31,8 @@ const (
 
 	defaultStoragePath   = "/var/lib/xtemp-store"
 	defaultMaxUploadSize = 50 << 20
+	defaultRetentionSeconds int64 = 24 * 3600
+	defaultCleanupInterval  int64 = 3600
 	bufferSize           = 16 * 1024
 
 	dirPerm  os.FileMode = 0750
@@ -44,6 +49,8 @@ const (
 type AppConfig struct {
 	BaseStoragePath   string
 	MaxUploadSize     int64
+	RetentionSeconds       int64
+	CleanupIntervalSeconds int64
 	TrustedProxies    []string
 	StorageType       StorageType
 	R2AccountID       string
@@ -86,16 +93,22 @@ func init() {
 	}
 
 	logger.Printf("Max upload size set to %d bytes (%dMB)", config.MaxUploadSize, config.MaxUploadSize/(1<<20))
+	logger.Printf("Retention period set to %s", time.Duration(config.RetentionSeconds)*time.Second)
+	logger.Printf("Cleanup interval set to %s", time.Duration(config.CleanupIntervalSeconds)*time.Second)
 	logger.Printf("Trusted proxies configured: %v", config.TrustedProxies)
 	logger.Printf("Storage type: %s", config.StorageType)
+
+	startCleanupWorker()
 }
 
 func loadConfig() *AppConfig {
 	cfg := &AppConfig{
-		BaseStoragePath: defaultStoragePath,
-		MaxUploadSize:   defaultMaxUploadSize,
-		TrustedProxies:  []string{"127.0.0.1", "::1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "fc00::/7"},
-		StorageType:     StorageLocal,
+		BaseStoragePath:        defaultStoragePath,
+		MaxUploadSize:          defaultMaxUploadSize,
+		RetentionSeconds:       defaultRetentionSeconds,
+		CleanupIntervalSeconds: defaultCleanupInterval,
+		TrustedProxies:         []string{"127.0.0.1", "::1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "fc00::/7"},
+		StorageType:            StorageLocal,
 	}
 	if path := os.Getenv(envBaseStoragePath); path != "" {
 		cfg.BaseStoragePath = filepath.Clean(path)
@@ -106,6 +119,22 @@ func loadConfig() *AppConfig {
 			cfg.MaxUploadSize = size
 		} else {
 			logger.Printf("Invalid %s value '%s', using default %dMB", envMaxUploadSize, sizeStr, defaultMaxUploadSize/(1<<20))
+		}
+	}
+	if retentionSecondsStr := os.Getenv(envRetentionSeconds); retentionSecondsStr != "" {
+		retentionSeconds, err := strconv.ParseInt(retentionSecondsStr, 10, 64)
+		if err == nil && retentionSeconds > 0 {
+			cfg.RetentionSeconds = retentionSeconds
+		} else {
+			logger.Printf("Invalid %s value '%s', using default %d second(s)", envRetentionSeconds, retentionSecondsStr, defaultRetentionSeconds)
+		}
+	}
+	if cleanupIntervalStr := os.Getenv(envCleanupInterval); cleanupIntervalStr != "" {
+		cleanupInterval, err := strconv.ParseInt(cleanupIntervalStr, 10, 64)
+		if err == nil && cleanupInterval > 0 {
+			cfg.CleanupIntervalSeconds = cleanupInterval
+		} else {
+			logger.Printf("Invalid %s value '%s', using default %d second(s)", envCleanupInterval, cleanupIntervalStr, defaultCleanupInterval)
 		}
 	}
 	if proxyStr := os.Getenv(envTrustedProxies); proxyStr != "" {

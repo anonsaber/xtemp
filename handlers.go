@@ -272,3 +272,11 @@ func handleGetServerYear(c *gin.Context) {
 		"year": time.Now().Year(),
 	})
 }
+
+func handleGetRetentionPolicy(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"retention_seconds": config.RetentionSeconds,
+		"storage_type":      config.StorageType,
+		"auto_cleanup":      true,
+	})
+}

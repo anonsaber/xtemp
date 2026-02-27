@@ -548,7 +548,7 @@
             <div class="acceptance-terms-message">
                 Important Notice:<br>
                 1. This file-sharing service is a public platform. Anyone with the link can access your data.<br>
-                2. Uploaded files will be retained on the server for approximately <strong>24 hours</strong> and then automatically deleted.<br>
+                2. <span id="retentionPolicyMessage">Uploaded files will be retained according to the server policy.</span><br>
                 3. You can also delete your uploaded file at any time using a DELETE request.<br>
                 If you have read and agree to the above terms, please type "<strong>ACCEPT</strong>" (uppercase) below to proceed.
             </div>
@@ -669,7 +669,9 @@
         const SECTION_TRANSITION_MS = 500;
         const CONFIG_ENDPOINT = '/config/max_upload_size';
         const SERVER_YEAR_ENDPOINT = '/config/server_year';
+        const RETENTION_POLICY_ENDPOINT = '/config/retention_policy';
         const serverYearElement = document.getElementById('serverYear');
+        const retentionPolicyMessageElement = document.getElementById('retentionPolicyMessage');
         const state = {
             selectedFile: null,
             uploadStartTime: 0,
@@ -770,6 +772,33 @@
             }
         }
 
+        async function fetchRetentionPolicy() {
+            if (!retentionPolicyMessageElement) return;
+            try {
+                const response = await fetch(RETENTION_POLICY_ENDPOINT);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch retention policy: ${response.status}`);
+                }
+                const data = await response.json();
+                const retentionSeconds = Number(data.retention_seconds) || 86400;
+                const storageType = String(data.storage_type || 'local');
+                const retentionLabel = retentionSeconds >= 3600
+                    ? `${Math.round(retentionSeconds / 3600)} hour(s)`
+                    : `${Math.max(1, Math.round(retentionSeconds / 60))} minute(s)`;
+                if (storageType === 'local') {
+                    retentionPolicyMessageElement.innerHTML =
+                        `Uploaded files will be retained on the server for approximately <strong>${retentionLabel}</strong> and then automatically deleted by the server cleanup task.`;
+                } else {
+                    retentionPolicyMessageElement.innerHTML =
+                        `Uploaded files in R2 will be retained for approximately <strong>${retentionLabel}</strong> and then automatically deleted by the server cleanup task.`;
+                }
+            } catch (error) {
+                console.error('Error fetching retention policy:', error);
+                retentionPolicyMessageElement.innerHTML =
+                    'Uploaded file retention follows the current server policy. You can delete files at any time using a DELETE request.';
+            }
+        }
+
         function init() {
             [elements.acceptanceSection, elements.uploadSection, elements.progressContainer, elements.resultContainer].forEach(el => {
                 if(el) el.style.display = 'none';
@@ -793,6 +822,7 @@
 
             fetchMaxUploadSize();
             fetchServerYear();
+            fetchRetentionPolicy();
 
             elements.confirmAcceptanceBtn.addEventListener('click', verifyAcceptance);
             elements.acceptanceInput.addEventListener('keypress', (e) => {

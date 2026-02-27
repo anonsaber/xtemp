@@ -1,6 +1,6 @@
 # XTemp File Hub
 
-A simple, fast, and modern temporary file sharing service. Upload, download, copy link, and delete files easily.
+XTemp File Hub is a lightweight temporary file sharing service, similar in spirit to **bashupload**: simple upload, direct download URL, and quick cleanup.
 
 ## Features
 
@@ -8,6 +8,8 @@ A simple, fast, and modern temporary file sharing service. Upload, download, cop
 - Download, copy link, or delete your file after upload
 - Command line (curl) upload supported
 - All file types supported (max size configurable)
+- Configurable retention and cleanup interval via seconds-based backend config
+- Built-in cleanup worker for both local storage and Cloudflare R2
 
 ## Usage
 
@@ -73,7 +75,9 @@ docker run -d -p 5000:5000 \
 
 > ⚠️ Please replace `your_account_id`, `your_access_key_id`, `your_secret_access_key`, `your_backet_name`, and `your-strong-password` with your actual Cloudflare R2 information and a strong password.
 
-## Dynamically Change Max Upload Size at Runtime
+## Runtime Configuration
+
+### Max Upload Size (existing)
 
 You can change the maximum allowed upload size without restarting the service by calling the following API:
 
@@ -88,10 +92,19 @@ You can change the maximum allowed upload size without restarting the service by
    - The API is only available if `XTEMP_CONFIG_API_PASSWORD` is set.
    - Always use a strong password for this environment variable.
 
+### File Retention Window (new)
+
+- Configure file retention with `XTEMP_RETENTION_SECONDS` (default: `86400`, i.e. 24 hours).
+- Configure cleanup schedule with `XTEMP_CLEANUP_INTERVAL_SECONDS` (default: `3600`, i.e. 1 hour).
+- Frontend terms now read this retention policy from backend instead of a hardcoded value.
+
 ## File Expiration
 
-The demo site at [xtemp.motofans.club](https://xtemp.motofans.club) uses Cloudflare R2's lifecycle management to automatically delete files after 24 hours.  
-If you use local storage, you may need to set up a `crontab` job to periodically clean up expired files.
+- **Local storage (`STORAGE_TYPE=local`)**: the server cleanup task removes expired files automatically.
+- **R2 storage (`STORAGE_TYPE=r2`)**: the same server cleanup task lists and deletes expired objects via R2 `DeleteObject`.
+- Delete API remains available for manual cleanup of specific files.
+
+The demo site at [xtemp.motofans.club](https://xtemp.motofans.club) is an example deployment.
 
 ## License
 
