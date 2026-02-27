@@ -1,12 +1,14 @@
 # XTemp File Hub
 
 XTemp File Hub is a lightweight temporary file sharing service, similar in spirit to **bashupload**: simple upload, direct download URL, and quick cleanup.
+It is also similar to **transfer.sh**, with a focus on simple self-hosted temporary file transfer workflows.
 
 ## Features
 
 - Drag & drop or click to upload files
 - Download, copy link, or delete your file after upload
 - Command line (curl) upload supported
+- Native support for both `curl` raw `PUT` upload and multipart `POST` upload
 - All file types supported (max size configurable)
 - Configurable retention and cleanup interval via seconds-based backend config
 - Built-in cleanup worker for both local storage and Cloudflare R2
@@ -77,7 +79,7 @@ docker run -d -p 5000:5000 \
 
 ## Runtime Configuration
 
-### Max Upload Size (existing)
+### Max Upload Size
 
 You can change the maximum allowed upload size without restarting the service by calling the following API:
 
@@ -92,7 +94,7 @@ You can change the maximum allowed upload size without restarting the service by
    - The API is only available if `XTEMP_CONFIG_API_PASSWORD` is set.
    - Always use a strong password for this environment variable.
 
-### File Retention Window (new)
+### File Retention Window
 
 - Configure file retention with `XTEMP_RETENTION_SECONDS` (default: `86400`, i.e. 24 hours).
 - Configure cleanup schedule with `XTEMP_CLEANUP_INTERVAL_SECONDS` (default: `3600`, i.e. 1 hour).
