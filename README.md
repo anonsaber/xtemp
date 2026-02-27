@@ -95,7 +95,7 @@ You can change the maximum allowed upload size without restarting the service by
    - The API is only available if `XTEMP_CONFIG_API_PASSWORD` is set.
    - Always use a strong password for this environment variable.
 
-Minimal environment example:
+Environment example:
 
 ```sh
 -e MAX_UPLOAD_SIZE=524288000 \
@@ -111,7 +111,7 @@ Minimal environment example:
 - The DELETE API remains available for manual cleanup of specific files.
 - Frontend terms read retention policy from backend instead of a hardcoded value.
 
-Minimal environment example:
+Environment example:
 
 ```sh
 -e XTEMP_RETENTION_SECONDS=86400 \
